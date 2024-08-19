@@ -1,0 +1,49 @@
+sudo: required
+services:
+  - docker
+
+env:
+  global:
+    # get ID of the latest Git commit (GIT SHA, visible e.g. by "git log")
+    - SHA=$(git rev-parse HEAD)
+    # configure GC CLI not to display any prompts that require user input
+    - CLOUDSDK_CORE_DISABLE_PROMPTS=1
+
+# some initial setup, that is performed inside instance provided by Travis CI
+before_install:
+  # decrypt service account file and put it to root folder, so it's available for auth few lines below
+  # note: this command is generated from Travis CLI based on service account json file
+  - openssl aes-256-cbc -K $encrypted_9f3b5599b056_key -iv $encrypted_9f3b5599b056_iv -in service-account.json.enc -out service-account.json -d
+  # download Google Cloud SDK and install it
+  - curl https://sdk.cloud.google.com | bash > /dev/null;
+  # apply additional config coming from GC SDK
+  - source $HOME/google-cloud-sdk/path.bash.inc
+  # install kubectl command
+  - gcloud components update kubectl
+  # authorization with GC using service-account.json file downloaded from GC
+  # (equivalent to IAM in AWS)
+  - gcloud auth activate-service-account --key-file service-account.json
+  # specify GC project ID (copy from GC)
+  - gcloud config set project multi-k8s-432713
+  # specify GC compute zone
+  - gcloud config set compute/zone us-central1-a
+  # specify Cluster name
+  - gcloud container clusters get-credentials multi-cluster
+  # log in to Docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  # prepare Images for tests (more Images / components would be added in a real project)
+  - docker build -t skrlivoj/react-test -f ./client/Dockerfile.dev ./client
+
+# primary test running section,
+# Travis consider status code 0 as successful test
+scripts:
+  - docker run -e CI=true skrlivoj/react-test npm test
+
+deploy:
+  # there is no built-in Travis provider for deploying to Kubernetes Cluster, we need to compose a script
+  provider: script
+  # our custom script is called deploy.sh
+  script: bash ./deploy.sh
+  # script is run only when change is on master branch
+  on:
+    branch: master
