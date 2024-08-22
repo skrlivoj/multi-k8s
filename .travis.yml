@@ -1,4 +1,6 @@
 sudo: required
+# specify the Ubuntu distribution
+dist: focal
 services:
   - docker
 
@@ -14,6 +16,8 @@ before_install:
   # decrypt service account file and put it to root folder, so it's available for auth few lines below
   # note: this command is generated from Travis CLI based on service account json file
   - openssl aes-256-cbc -K $encrypted_9f3b5599b056_key -iv $encrypted_9f3b5599b056_iv -in service-account.json.enc -out service-account.json -d
+  # Google Cloud SDK requires at least Python 3.8
+  - CLOUDSDK_PYTHON=python3.8
   # download Google Cloud SDK and install it
   - curl https://sdk.cloud.google.com | bash > /dev/null;
   # apply additional config coming from GC SDK
