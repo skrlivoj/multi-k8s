@@ -37,7 +37,7 @@ spec:
                   key: PGPASSWORD
           # following is added by VSCode Exteension Kubernetes
           # if missing, this Deployment could starve other resources
-          resources:
-            limits:
-              memory: "128Mi"
-              cpu: "500m"
+          # resources:
+          #   limits:
+          #     memory: "128Mi"
+          #     cpu: "500m"
